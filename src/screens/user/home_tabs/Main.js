@@ -6,6 +6,8 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  ScrollView,
+  TextInput,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import Header from '../../common/Header';
@@ -19,6 +21,8 @@ const Main = () => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const [columns, setColumns] = useState(2); // State untuk jumlah kolom
+  const [filteredItems, setFilteredItems] = useState([]); // Menyimpan data produk yang difilter
+  const [searchText, setSearchText] = useState(''); // State untuk teks yang diinputkan pada pencarian
 
   useEffect(() => {
     // const subscriber =
@@ -43,10 +47,37 @@ const Main = () => {
       });
     // Stop listening for updates when no longer required
     // return () => subscriber();
+
+    const unsubscribe = firestore()
+      .collection('items')
+      .onSnapshot(snapshot => {
+        const updatedItems = snapshot.docs.map(doc => ({
+          id: doc.id,
+          data: doc.data(),
+        }));
+        setItems(updatedItems);
+      });
+
+    return () => unsubscribe(); // Unsubscribe ketika komponen di-unmount
   }, []);
+
   useEffect(() => {
     getCartItems();
   }, [isFocused]);
+
+  useEffect(() => {
+    // Ketika nilai pencarian berubah, filter produk berdasarkan teks yang diinputkan
+    const filtered = items.filter(item =>
+      item.data.name.toLowerCase().includes(searchText.toLowerCase()),
+    );
+    setFilteredItems(filtered);
+  }, [searchText, items]);
+
+  // Fungsi untuk melakukan pencarian
+  const handleSearch = text => {
+    setSearchText(text);
+  };
+
   const getCartItems = async () => {
     userId = await AsyncStorage.getItem('USERID');
     const user = await firestore().collection('users').doc(userId).get();
@@ -61,13 +92,37 @@ const Main = () => {
     let existingItem = tempCart.find(itm => itm.id === item.id);
     if (existingItem) {
       // Jika item sudah ada di cart, tambahkan jumlahnya
-      existingItem.data.qty = (existingItem.data.qty || 0) + 1;
+      if (item.data.stock > 0) {
+        existingItem.data.qty = (existingItem.data.qty || 0) + 1;
+        // Kurangi stok produk
+        item.data.stock -= 1;
+
+        // Update stok produk di Firestore
+        await firestore().collection('items').doc(item.id).update({
+          stock: item.data.stock,
+        });
+      } else {
+        alert('Stock produk habis!');
+        return;
+      }
     } else {
-      // Jika item belum ada di cart, tambahkan ke cart dengan qty 1
-      tempCart.push({
-        id: item.id,
-        data: {...item.data, qty: 1}, // Inisialisasi qty menjadi 1
-      });
+      if (item.data.stock > 0) {
+        // Jika item belum ada di cart, tambahkan ke cart dengan qty 1
+        tempCart.push({
+          id: item.id,
+          data: {...item.data, qty: 1}, // Inisialisasi qty menjadi 1
+        });
+        // Kurangi stok produk
+        item.data.stock -= 1;
+
+        // Update stok produk di Firestore
+        await firestore().collection('items').doc(item.id).update({
+          stock: item.data.stock,
+        });
+      } else {
+        alert('Stock produk habis!');
+        return;
+      }
     }
 
     // Update cart di Firestore
@@ -88,8 +143,28 @@ const Main = () => {
           navigation.navigate('Cart');
         }}
       />
+      <View
+        style={{
+          margin: 5,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderWidth: 0.8,
+          borderColor: '#C0C0C0',
+          borderRadius: 7,
+        }}>
+        <TextInput
+          placeholder="Search for items or More"
+          onChangeText={text => handleSearch(text)} // Memanggil fungsi handleSearch saat teks berubah
+        />
+        <Image
+          style={{width: 40, marginTop: 5, height: 40, borderRadius: 20}}
+          source={require('../../../images/search.png')}
+        />
+      </View>
+
       <FlatList
-        data={items}
+        data={filteredItems}
         key={columns} // Ganti key ketika jumlah kolom berubah
         numColumns={columns}
         renderItem={({item, index}) => {
@@ -119,16 +194,19 @@ const Main = () => {
                   <Image
                     key={index}
                     source={require('../../../images/fullStar.png')}
-                    style={{width: 15, height: 15}}
+                    style={{width: 15, height: 15, marginLeft: -20}}
                   />
                 ))}
                 <Text style={{fontSize: 13, fontWeight: '700'}}>
-                  4.9 | 100Rb+ Terjual
+                  {item.data.rating} | 100Rb+ Terjual
                 </Text>
               </View>
               {/* Details */}
               <View style={styles.itemDetails}>
                 <Text style={styles.nameText}>{item.data.name}</Text>
+                <Text style={[styles.nameText, {fontSize: 17}]}>
+                  Stock : {item.data.stock}
+                </Text>
                 {/* <Text style={styles.descText}>{item.data.description}</Text> */}
                 <View style={styles.priceView}>
                   <Text style={styles.priceText}>
@@ -142,7 +220,11 @@ const Main = () => {
                 <TouchableOpacity
                   style={styles.addToCartBtn}
                   onPress={() => {
-                    onAddToCart(item, index);
+                    if (item.data.stock > 0) {
+                      onAddToCart(item, index);
+                    } else {
+                      alert('Stock produk habis!');
+                    }
                   }}>
                   <Text style={{color: '#fff'}}>Add To cart</Text>
                 </TouchableOpacity>
@@ -161,6 +243,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
+    marginBottom: 50,
   },
   itemView: {
     backgroundColor: '#fff',
@@ -171,23 +254,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     margin: 5,
-    width: '45%', // Atur lebar tiap item untuk membuat 2 kolom
+    height: 300,
   },
+
   itemImage: {
-    width: '90%',
+    width: 150,
     height: 150,
     borderRadius: 10,
     margin: 5,
     marginBottom: -20,
     resizeMode: 'cover',
   },
+
   itemDetails: {
     flex: 1,
     margin: 10,
-    justifyContent: 'space-between',
+    alignSelf: 'center',
     paddingVertical: 10,
   },
+
   nameText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  nameTextH: {
     fontSize: 18,
     fontWeight: '700',
   },

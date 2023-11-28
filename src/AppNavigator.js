@@ -19,7 +19,7 @@ import AddNewAddres from './screens/user/checkout/AddNewAddres';
 import OrderStatus from './screens/user/checkout/OrderStatus';
 import Detail from './screens/user/Detail';
 import Items from './tabs/Items';
-
+import Profile from './screens/user/home_tabs/Profile';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -111,6 +111,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Items"
           component={Items}
+          options={{headerShown: true}}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={Profile}
           options={{headerShown: true}}
         />
       </Stack.Navigator>

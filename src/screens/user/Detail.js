@@ -72,13 +72,23 @@ const EditItem = ({navigation}) => {
     let existingItem = tempCart.find(itm => itm.id === item.id);
     if (existingItem) {
       // Jika item sudah ada di cart, tambahkan jumlahnya
-      existingItem.data.qty = (existingItem.data.qty || 0) + 1;
+      if (existingItem.data.qty < item.data.stock) {
+        existingItem.data.qty = (existingItem.data.qty || 0) + 1;
+      } else {
+        alert('Stock produk habis!');
+        return;
+      }
     } else {
-      // Jika item belum ada di cart, tambahkan ke cart dengan qty 1
-      tempCart.push({
-        id: item.id,
-        data: {...item.data, qty: 1}, // Inisialisasi qty menjadi 1
-      });
+      if (item.data.stock > 0) {
+        // Jika item belum ada di cart, tambahkan ke cart dengan qty 1
+        tempCart.push({
+          id: item.id,
+          data: {...item.data, qty: 1}, // Inisialisasi qty menjadi 1
+        });
+      } else {
+        alert('Stock produk habis!');
+        return;
+      }
     }
 
     // Update cart di Firestore
@@ -87,7 +97,6 @@ const EditItem = ({navigation}) => {
     });
 
     getCartItems(); // Refresh jumlah item di keranjang
-    navigation.navigate('Cart');
   };
   return (
     <ScrollView style={styles.container}>

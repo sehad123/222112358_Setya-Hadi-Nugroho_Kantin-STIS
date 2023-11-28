@@ -21,6 +21,7 @@ const Add = () => {
   const [imageData, setImageData] = useState(null);
   const [name, setName] = useState('');
   const [rating, setRating] = useState('');
+  const [stock, setStock] = useState('');
   const [price, setPrice] = useState('');
   const [discountPrice, setDiscountPrice] = useState('');
   const [description, setDescription] = useState('');
@@ -88,17 +89,16 @@ const Add = () => {
         discountPrice: discountPrice,
         description: description,
         rating: rating,
+        stock: stock,
         imageUrl: url + '',
       })
       .then(() => {
         console.log('Barang berhasil ditambahkan !');
         alert('Barang berhasil ditambahkan !');
+        setModalVisible(false);
       })
       .catch(error => {
         console.error('Error adding item: ', error);
-      })
-      .finally(() => {
-        setModalVisible(false);
       });
   };
 
@@ -157,6 +157,14 @@ const Add = () => {
           onChangeText={text => setDiscountPrice(text)}
           keyboardType="numeric"
         />
+        <Text style={styles.label}>Stock</Text>
+        <TextInput
+          placeholder="Masukkan Stock Produk"
+          style={styles.inputStyle}
+          value={stock}
+          onChangeText={text => setStock(text)}
+          keyboardType="numeric"
+        />
 
         <Text style={styles.label}>Deskripsi</Text>
         <TextInput
@@ -191,6 +199,7 @@ const Add = () => {
               price !== '' &&
               discountPrice !== '' &&
               description !== '' &&
+              stock !== '' &&
               rating !== ''
             ) {
               uploadImage();

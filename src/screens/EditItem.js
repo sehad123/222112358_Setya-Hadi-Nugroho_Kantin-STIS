@@ -14,6 +14,8 @@ import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
 import {useRoute} from '@react-navigation/native';
+import Loader from '../screens/common/Loader';
+
 const EditItem = ({navigation}) => {
   const route = useRoute();
   const [imageData, setImageData] = useState({
@@ -22,6 +24,8 @@ const EditItem = ({navigation}) => {
   const [name, setName] = useState(route.params.data.name);
   const [rating, setRating] = useState(route.params.data.rating);
   const [price, setPrice] = useState(route.params.data.price);
+  const [stock, setStock] = useState(route.params.data.stock);
+  const [modalVisible, setModalVisible] = useState(false);
   const [discountPrice, setDiscountPrice] = useState(
     route.params.data.discountPrice,
   );
@@ -73,6 +77,7 @@ const EditItem = ({navigation}) => {
   };
 
   const uploadItem = () => {
+    setModalVisible(true);
     firestore()
       .collection('items')
       .doc(route.params.id)
@@ -80,6 +85,7 @@ const EditItem = ({navigation}) => {
         name: name,
         rating: rating,
         price: price,
+        stock: stock,
         discountPrice: discountPrice,
         description: description,
         imageUrl: route.params.data.imageUrl + '',
@@ -87,6 +93,7 @@ const EditItem = ({navigation}) => {
       .then(() => {
         console.log('User added!');
         navigation.goBack();
+        setModalVisible(false);
       });
   };
 
@@ -94,7 +101,16 @@ const EditItem = ({navigation}) => {
     <ScrollView style={styles.container}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Edit Item</Text>
+          <Text style={styles.headerText}>Tambah Produk</Text>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('SelectLogin');
+            }}>
+            <Image
+              source={require('../images/logout.png')}
+              style={styles.logoutIcon}
+            />
+          </TouchableOpacity>
         </View>
 
         {imageData !== null ? (
@@ -103,6 +119,7 @@ const EditItem = ({navigation}) => {
             style={styles.imageStyle}
           />
         ) : null}
+
         <Text style={styles.label}>Nama Produk</Text>
         <TextInput
           placeholder="Masukkan Nama Produk"
@@ -135,6 +152,14 @@ const EditItem = ({navigation}) => {
           onChangeText={text => setDiscountPrice(text)}
           keyboardType="numeric"
         />
+        <Text style={styles.label}>Stock</Text>
+        <TextInput
+          placeholder="Masukkan Stock Produk"
+          style={styles.inputStyle}
+          value={stock}
+          onChangeText={text => setStock(text)}
+          keyboardType="numeric"
+        />
 
         <Text style={styles.label}>Deskripsi</Text>
         <TextInput
@@ -154,13 +179,13 @@ const EditItem = ({navigation}) => {
         />
 
         <Text style={{alignSelf: 'center', marginTop: 20}}>OR</Text>
+
         <TouchableOpacity
           style={styles.pickBtn}
-          onPress={() => {
-            requestCameraPermission();
-          }}>
-          <Text>Pick Image From Gallery</Text>
+          onPress={requestCameraPermission}>
+          <Text>Ambil dari Galeri</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.uploadBtn}
           onPress={() => {
@@ -169,6 +194,7 @@ const EditItem = ({navigation}) => {
               price !== '' &&
               discountPrice !== '' &&
               description !== '' &&
+              stock !== '' &&
               rating !== ''
             ) {
               uploadItem();
@@ -176,29 +202,43 @@ const EditItem = ({navigation}) => {
               alert('Mohon isi semua data');
             }
           }}>
-          <Text style={{color: '#fff'}}>Edit Item</Text>
+          <Text style={{color: '#fff'}}>Edit Product</Text>
         </TouchableOpacity>
+        <Loader modalVisible={modalVisible} setModalVisible={setModalVisible} />
       </View>
     </ScrollView>
   );
 };
 
-export default EditItem;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   header: {
     height: 60,
+    flexDirection: 'row',
     width: '100%',
     backgroundColor: '#fff',
     elevation: 5,
     paddingLeft: 20,
-    justifyContent: 'center',
+    paddingRight: 20,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
+    color: 'purple',
+  },
+  logoutIcon: {
+    width: 40,
+    height: 30,
+  },
+  label: {
+    marginLeft: 20,
+    marginTop: 15,
+    marginBottom: 5,
+    fontWeight: 'bold',
   },
   inputStyle: {
     width: '90%',
@@ -207,7 +247,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     paddingLeft: 20,
     paddingRight: 20,
-    marginTop: 30,
+    marginTop: 5,
     alignSelf: 'center',
   },
   pickBtn: {
@@ -233,9 +273,11 @@ const styles = StyleSheet.create({
   },
   imageStyle: {
     width: '90%',
-    height: 200,
+    height: 250,
     borderRadius: 10,
     alignSelf: 'center',
     marginTop: 20,
   },
 });
+
+export default EditItem;

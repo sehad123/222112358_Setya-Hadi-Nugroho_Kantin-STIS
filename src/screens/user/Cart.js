@@ -18,13 +18,32 @@ let userId = '';
 const Cart = ({navigation}) => {
   const isFocused = useIsFocused();
   const [cartList, setCartList] = useState([]);
+  const [userId, setUserId] = useState('');
+
   useEffect(() => {
     getCartItems();
   }, [isFocused]);
+
+  useEffect(() => {
+    const unsubscribe = firestore()
+      .collection('users')
+      .doc(userId)
+      .onSnapshot(snapshot => {
+        const user = snapshot.data();
+        setCartList(user && user.cart ? user.cart : []);
+      });
+
+    return () => unsubscribe(); // Unsubscribe ketika komponen di-unmount
+  }, [userId]);
+
   const getCartItems = async () => {
-    userId = await AsyncStorage.getItem('USERID');
-    const user = await firestore().collection('users').doc(userId).get();
-    setCartList(user._data.cart);
+    try {
+      const storedUserId = await AsyncStorage.getItem('USERID');
+      setUserId(storedUserId);
+    } catch (error) {
+      console.error('Error fetching user ID:', error);
+      // Handle error fetching user ID
+    }
   };
 
   const addItem = async item => {
@@ -86,7 +105,7 @@ const Cart = ({navigation}) => {
               />
               <View style={styles.nameView}>
                 <Text style={styles.nameText}>{item.data.name}</Text>
-                <Text style={styles.descText}>{item.data.description}</Text>
+                <Text style={styles.descText}>Stock : {item.data.stock}</Text>
                 <View style={styles.priceView}>
                   <Text style={styles.priceText}>
                     {'Rp ' + item.data.discountPrice}

@@ -27,35 +27,33 @@ const UserLogin = ({navigation}) => {
   };
   const adminLogin = async () => {
     setModalVisible(true);
-    firestore()
-      .collection('users')
-      // Filter results
-      .where('email', '==', email)
-      .get()
-      .then(querySnapshot => {
-        setModalVisible(false);
-        /* ... */
-        console.log(querySnapshot.docs);
-        if (querySnapshot.docs[0]._data !== null) {
-          if (
-            querySnapshot.docs[0]._data.email === email &&
-            querySnapshot.docs[0]._data.password === password
-          ) {
-            goToNextScreen(
-              querySnapshot.docs[0]._data.userId,
-              querySnapshot.docs[0]._data.mobile,
-              querySnapshot.docs[0]._data.name,
-            );
-          } else {
-            alert('Email / Password anda salah ');
-          }
-        }
-      })
-      .catch(error => {
-        setModalVisible(false);
-        console.log(error);
-        alert('Please Check Email/Password');
-      });
+    try {
+      const userSnapshot = await firestore()
+        .collection('users')
+        .where('email', '==', email)
+        .where('password', '==', password)
+        .get();
+
+      setModalVisible(false);
+
+      if (userSnapshot.empty) {
+        alert('Email / Password anda salah');
+        return;
+      }
+
+      const userData = userSnapshot.docs[0].data();
+      goToNextScreen(
+        userData.userId,
+        userData.mobile,
+        userData.name,
+        userData.saldo,
+        userData.profileImage,
+      );
+    } catch (error) {
+      setModalVisible(false);
+      console.log(error);
+      alert('Please Check Email/Password');
+    }
   };
 
   const goToNextScreen = async (userId, mobile, name) => {

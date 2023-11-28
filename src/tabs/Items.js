@@ -6,6 +6,7 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  Alert,
   ScrollView,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
@@ -111,6 +112,8 @@ const Items = () => {
                       {item.data.rating}
                     </Text>
                   </View>
+                  <Text style={styles.nameText}>Stock : {item.data.stock}</Text>
+
                   <View style={styles.priceView}>
                     {item.data.price > 20000 ? (
                       <>
@@ -144,7 +147,23 @@ const Items = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
-                    deleteItem(item.id);
+                    Alert.alert(
+                      'Konfirmasi',
+                      'Apakah Anda yakin ingin menghapus produk?',
+                      [
+                        {
+                          text: 'Batal',
+                          onPress: () => console.log('Canceled'),
+                          style: 'cancel',
+                        },
+                        {
+                          text: 'Hapus',
+                          onPress: () => deleteItem(item.id), // Panggil fungsi deleteImage saat tombol "Hapus" ditekan
+                          style: 'destructive',
+                        },
+                      ],
+                      {cancelable: true},
+                    );
                   }}>
                   <Image
                     source={require('../images/delete.png')}
@@ -164,6 +183,7 @@ export default Items;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginBottom: 50,
   },
   header: {
     height: 60,
@@ -188,12 +208,12 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginTop: 10,
     borderRadius: 10,
-    height: 100,
+    height: 120,
     marginBottom: 10,
   },
   itemImage: {
-    width: 90,
-    height: 90,
+    width: 100,
+    height: 100,
     borderRadius: 10,
     margin: 5,
   },
@@ -228,5 +248,7 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
+    marginLeft: -20,
+    marginTop: 10,
   },
 });

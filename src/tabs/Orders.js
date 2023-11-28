@@ -89,7 +89,7 @@ const Orders = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Daftar Produk</Text>
+        <Text style={styles.headerText}>Daftar Pesanan</Text>
         <TouchableOpacity
           onPress={() => {
             navigation.navigate('SelectLogin');
