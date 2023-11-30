@@ -10,13 +10,15 @@ import React, {useState} from 'react';
 import firestore from '@react-native-firebase/firestore';
 import uuid from 'react-native-uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Loader from '../../common/Loader';
 const AddNewAddress = ({navigation}) => {
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
   const [mobile, setMobile] = useState('');
-
+  const [modalVisible, setModalVisible] = useState(false);
   const saveAddress = async () => {
+    setModalVisible(true);
     const addressId = uuid.v4();
     const userId = await AsyncStorage.getItem('USERID');
     const user = await firestore().collection('users').doc(userId).get();
@@ -33,6 +35,7 @@ const AddNewAddress = ({navigation}) => {
       .then(res => {
         console.log('successfully added');
         navigation.goBack();
+        setModalVisible(false);
       })
       .catch(error => {
         console.log(error);
@@ -74,6 +77,7 @@ const AddNewAddress = ({navigation}) => {
           saveAddress();
         }}>
         <Text style={styles.btnText}>Save Address</Text>
+        <Loader modalVisible={modalVisible} setModalVisible={setModalVisible} />
       </TouchableOpacity>
     </View>
   );

@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
 import React, {useState} from 'react';
 import LanguageModal from '../common/LanguageModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,6 +14,10 @@ const SelectLogin = ({navigation}) => {
   };
   return (
     <View style={styles.container}>
+      <Image
+        style={{height: 90, width: 90, marginBottom: 10}}
+        source={require('../../images/stis.png')}
+      />
       <Text style={styles.title}>
         {selectedLang == 0
           ? translation[0].English

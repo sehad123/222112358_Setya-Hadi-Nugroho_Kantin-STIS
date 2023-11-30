@@ -73,25 +73,33 @@ const UserSignup = ({navigation}) => {
           .getDownloadURL();
         console.log(url);
         saveUser(url);
-        nav.navigate('UserLogin');
       } catch (error) {
         console.error('Error uploading image: ', error);
       }
     } else {
       saveUser(''); // Jika tidak ada gambar yang diunggah, kirim string kosong sebagai URL gambar
-      nav.navigate('UserLogin');
+      // nav.navigate('UserLogin');
     }
   };
 
   // ...
-  const saveUser = url => {
+  const saveUser = async url => {
     setModalVisible(true);
-    const userId = uuid.v4();
-    const imageUrl = url || ''; // Gunakan URL dari imageData atau string kosong jika tidak ada gambar
-    firestore()
-      .collection('users')
-      .doc(userId)
-      .set({
+
+    try {
+      const userRef = firestore().collection('users');
+      const existingUser = await userRef.where('email', '==', email).get();
+
+      if (!existingUser.empty) {
+        setModalVisible(false);
+        alert('Email sudah terdaftar!');
+        return;
+      }
+
+      const userId = uuid.v4();
+      const imageUrl = url || '';
+
+      await userRef.doc(userId).set({
         name: name,
         email: email,
         password: password,
@@ -100,17 +108,21 @@ const UserSignup = ({navigation}) => {
         userId: userId,
         profileImage: imageUrl,
         cart: [],
-      })
-      .then(res => {
-        setModalVisible(false);
-        navigation.goBack();
-      })
-      .catch(error => {
-        setModalVisible(false);
-        console.log(error);
       });
+
+      setModalVisible(false);
+      navigation.goBack();
+      alert('Registrasi berhasil silahkan login');
+    } catch (error) {
+      setModalVisible(false);
+      console.log(error);
+    }
   };
   // ...
+  const isValidEmail = input => {
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@gmail\.com\b/;
+    return emailRegex.test(input);
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -172,7 +184,7 @@ const UserSignup = ({navigation}) => {
       <TouchableOpacity
         style={styles.pickBtn}
         onPress={requestCameraPermission}>
-        <Text style={{textAlign: 'center', color: 'black', marginTop: 20}}>
+        <Text style={{textAlign: 'center', color: 'black'}}>
           Ambil dari Galeri
         </Text>
       </TouchableOpacity>
@@ -181,16 +193,18 @@ const UserSignup = ({navigation}) => {
         style={styles.loginBtn}
         onPress={() => {
           if (
-            email !== '' &&
-            password !== '' &&
-            name !== '' &&
-            mobile !== '' &&
-            mobile.length > 9
-          ) {
-            uploadImage();
-          } else {
-            alert('Please Enter Data');
-          }
+            email === '' &&
+            password === '' &&
+            name === '' &&
+            mobile === '' &&
+            saldo === ''
+          )
+            alert('mohon lengkapi semua data');
+          else if (mobile.length < 11)
+            alert('nomor telpon minimal 11 karakter');
+          else if (password.length < 8) alert('Password minimal 8 karakter');
+          else if (!isValidEmail(email)) alert('Email anda tidak valid');
+          else uploadImage();
         }}>
         <Text style={styles.btnText}>Sign up</Text>
       </TouchableOpacity>
@@ -204,6 +218,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
+  },
+  pickBtn: {
+    width: '90%',
+    height: 50,
+    borderWidth: 0.5,
+    borderRadius: 10,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
   },
   imageStyle: {
     width: '90%',

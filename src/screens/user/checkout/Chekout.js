@@ -7,15 +7,18 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
 import {useIsFocused} from '@react-navigation/native';
+import Loader from '../../common/Loader';
 let userId = '';
 const Checkout = ({navigation}) => {
   const [cartList, setCartList] = useState([]);
   const isFocused = useIsFocused();
+  const [modalVisible, setModalVisible] = useState(false);
 
   const [selectedAddress, setSelectedAddress] = useState('No Selected Address');
   useEffect(() => {
@@ -57,26 +60,75 @@ const Checkout = ({navigation}) => {
     return total;
   };
   const payNow = async () => {
+    const getFormattedDate = () => {
+      const months = [
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember',
+      ];
+
+      const currentDate = new Date();
+      const day = currentDate.getDate();
+      const monthIndex = currentDate.getMonth();
+      const year = currentDate.getFullYear();
+
+      const formattedDate = `${day} ${months[monthIndex]} ${year}`;
+
+      return formattedDate;
+    };
+
+    // Contoh penggunaan:
+    const formattedToday = getFormattedDate();
+    const generateUniqueId = () => {
+      return Date.now().toString();
+    };
+    setModalVisible(true);
     try {
       const email = await AsyncStorage.getItem('EMAIL');
       const name = await AsyncStorage.getItem('NAME');
       const mobile = await AsyncStorage.getItem('MOBILE');
 
-      // Replace this block with your payment logic (e.g., Midtrans integration)
-      // For the sake of demonstration, I'm using a setTimeout to simulate a payment process.
-      setTimeout(() => {
-        navigation.navigate('OrderStatus', {
-          status: 'success',
-          paymentId: '1234456778',
-          cartList: cartList,
-          total: getTotal(),
-          address: selectedAddress,
-          userId: userId,
-          userName: name,
-          userEmail: email,
-          userMobile: mobile,
-        });
-      }, 2000); // Simulating a 2-second payment process
+      const userDoc = await firestore().collection('users').doc(userId).get();
+      const user = userDoc.data();
+      const totalBiaya = getTotal();
+
+      if (user && user.saldo >= totalBiaya) {
+        // Simulate deduction of balance
+        const newBalance = user.saldo - totalBiaya;
+
+        // Update user's balance in Firestore
+        await firestore()
+          .collection('users')
+          .doc(userId)
+          .update({saldo: newBalance});
+        setModalVisible(false);
+        setTimeout(() => {
+          navigation.navigate('Delivery', {
+            status: 'success',
+            paymentId: generateUniqueId(),
+            cartList: cartList,
+            total: getTotal(),
+            address: selectedAddress,
+            userId: userId,
+            userName: name,
+            userEmail: email,
+            userMobile: mobile,
+            tanggal: '10 Desember 2023',
+          });
+        }, 1000); // Simulating a 2-second payment process
+      } else {
+        alert('Saldo anda tidak mencukupi untuk melakukan pembayaran.');
+        navigation.navigate('OrderStatus', {status: 'failed'});
+      }
     } catch (error) {
       // handle failure
       console.error(error);
@@ -151,13 +203,28 @@ const Checkout = ({navigation}) => {
           },
         ]}
         onPress={() => {
-          if (selectedAddress !== 'No Selected Address') {
-            payNow();
-          }
+          Alert.alert(
+            'Konfirmasi',
+            'Apakah Anda yakin ingin bayar?',
+            [
+              {
+                text: 'Batal',
+                onPress: () => console.log('Canceled'),
+                style: 'cancel',
+              },
+              {
+                text: 'Ya',
+                onPress: () => payNow(), // Panggil fungsi deleteImage saat tombol "Hapus" ditekan
+                style: 'destructive',
+              },
+            ],
+            {cancelable: true},
+          );
         }}>
         <Text style={{color: '#fff', fontSize: 18, fontWeight: '600'}}>
           Bayar Sekarang {'Rp ' + getTotal()}
         </Text>
+        <Loader modalVisible={modalVisible} setModalVisible={setModalVisible} />
       </TouchableOpacity>
     </View>
   );

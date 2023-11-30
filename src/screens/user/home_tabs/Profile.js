@@ -20,6 +20,7 @@ import img from '../../../images/User.png';
 import {launchImageLibrary} from 'react-native-image-picker';
 import Header from '../../common/Header';
 import storage from '@react-native-firebase/storage';
+import Loader from '../../common/Loader';
 
 const Profile = () => {
   const navigation = useNavigation();
@@ -27,10 +28,17 @@ const Profile = () => {
   const [imageData, setImageData] = useState(null);
   const [refreshPage, setRefreshPage] = useState(false);
   const [uploaded, setUploaded] = useState(false); // State untuk menandai apakah gambar sudah diunggah atau belum
+  const [modalVisible2, setModalVisible2] = useState(false);
   const [modalVisible, setModalVisible] = useState(false); // State untuk menampilkan atau menyembunyikan modal
+  const [modalVisibleP, setModalVisibleP] = useState(false); // State untuk menampilkan atau menyembunyikan modal
+  const [modalVisibleU, setModalVisibleU] = useState(false); // State untuk menampilkan atau menyembunyikan modal
+  const [modalVisibleS, setModalVisibleS] = useState(false); // State untuk menampilkan atau menyembunyikan modal
   const [saldoToAdd, setSaldoToAdd] = useState(''); // State untuk menampung jumlah saldo yang akan ditambahkan
+  const [Password, setPassword] = useState(''); // State untuk menampung jumlah saldo yang akan ditambahkan
+  const [newPassword, setNewPassword] = useState(''); // State untuk menampung jumlah saldo yang akan ditambahkan
 
   const deleteImage = async () => {
+    setModalVisible2(true);
     try {
       const userId = await AsyncStorage.getItem('USERID');
       const userRef = firestore().collection('users').doc(userId);
@@ -44,6 +52,7 @@ const Profile = () => {
         setModalVisible(false);
         setRefreshPage(prev => !prev);
         setUploaded(true);
+        setModalVisible2(false);
       }
     } catch (error) {
       console.error('Error delete image:', error);
@@ -53,28 +62,34 @@ const Profile = () => {
     if (saldoToAdd === '') {
       alert('Mohon masukkan jumlah saldo yang ingin ditambahkan.');
       return;
-    }
+    } else if (saldoToAdd < 10000) {
+      alert('Minimum Top Up 10 Ribu ');
+      return;
+    } else {
+      try {
+        setModalVisible2(true);
+        const userId = await AsyncStorage.getItem('USERID');
+        const userRef = firestore().collection('users').doc(userId);
+        const userSnapshot = await userRef.get();
 
-    try {
-      const userId = await AsyncStorage.getItem('USERID');
-      const userRef = firestore().collection('users').doc(userId);
-      const userSnapshot = await userRef.get();
+        if (userSnapshot.exists) {
+          const currentSaldo = userSnapshot.data().saldo || 0;
+          const newSaldo = parseInt(saldoToAdd) + currentSaldo;
 
-      if (userSnapshot.exists) {
-        const currentSaldo = userSnapshot.data().saldo || 0;
-        const newSaldo = parseInt(saldoToAdd) + currentSaldo;
+          await userRef.update({
+            saldo: newSaldo,
+          });
 
-        await userRef.update({
-          saldo: newSaldo,
-        });
-
-        setModalVisible(false);
-        setSaldoToAdd('');
-        setRefreshPage(prev => !prev);
-        setUploaded(true);
+          setModalVisible(false);
+          setSaldoToAdd('');
+          setRefreshPage(prev => !prev);
+          setUploaded(true);
+          setModalVisible2(false);
+          alert('Top up berhasil silahkan cek saldo anda');
+        }
+      } catch (error) {
+        console.error('Error topping up saldo:', error);
       }
-    } catch (error) {
-      console.error('Error topping up saldo:', error);
     }
   };
   const requestCameraPermission = async () => {
@@ -111,6 +126,7 @@ const Profile = () => {
   };
 
   const uploadImage = async () => {
+    setModalVisible2(true);
     if (!imageData) {
       console.warn('No image selected');
       return;
@@ -148,6 +164,7 @@ const Profile = () => {
       // Set state to trigger page refresh
       setRefreshPage(prev => !prev);
       setUploaded(true); // Setelah berhasil upload, tandai bahwa gambar sudah diunggah
+      setModalVisible2(false);
     } catch (error) {
       console.error(error);
     }
@@ -173,6 +190,50 @@ const Profile = () => {
     fetchUserData();
   }, [refreshPage]);
 
+  const ubahPassword = async () => {
+    setModalVisibleP(false);
+    if (newPassword === '') {
+      alert('Password tidak boleh kosong');
+      return;
+    } else if (newPassword === Password) {
+      alert('Password baru tidak boleh sama dengan password lama');
+      return;
+    } else {
+      setModalVisible2(true);
+      try {
+        const userId = await AsyncStorage.getItem('USERID');
+        const userRef = firestore().collection('users').doc(userId);
+        const userSnapshot = await userRef.get();
+
+        if (userSnapshot.exists) {
+          await userRef.update({
+            password: newPassword,
+          });
+
+          setModalVisibleU(false);
+          setSaldoToAdd('');
+          setRefreshPage(prev => !prev);
+          setUploaded(true);
+          setModalVisible2(false);
+          alert(' Password anda berhasil diperbarui ');
+        }
+      } catch (error) {
+        console.error('Error topping up saldo:', error);
+      }
+    }
+  };
+  const signOut = async () => {
+    try {
+      // Menghapus email dari penyimpanan lokal
+      await AsyncStorage.removeItem('EMAIL');
+
+      // Melakukan navigasi kembali ke halaman SelectLogin
+      navigation.navigate('SelectLogin');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Header title={'Profile Saya '} />
@@ -190,9 +251,9 @@ const Profile = () => {
             <TouchableOpacity
               style={{
                 position: 'absolute',
-                right: 10,
-                top: 10,
-                padding: 5,
+                right: 5,
+                top: 0,
+                padding: 4,
                 backgroundColor: '#fff',
                 borderRadius: 20,
               }}
@@ -219,6 +280,10 @@ const Profile = () => {
                 source={require('../../../images/delete.png')} // Jika ada gambar terupload, gunakan delete.png
                 style={{width: 20, height: 20}}
               />
+              <Loader
+                modalVisible={modalVisible2}
+                setModalVisible={setModalVisible2}
+              />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -237,9 +302,8 @@ const Profile = () => {
             <Text style={styles.welcomeText}>
               Selamat Datang {userData.name}
             </Text>
-            <Text style={styles.userInfo}>Email: {userData.email}</Text>
-            <Text style={styles.userInfo}>Nomor HP: {userData.mobile}</Text>
-            <Text style={styles.userInfo}>Saldo: {userData.saldo}</Text>
+            <Text style={styles.userInfo}>{userData.email}</Text>
+            <Text style={styles.userInfo}>{userData.mobile}</Text>
           </React.Fragment>
         )}
 
@@ -247,24 +311,14 @@ const Profile = () => {
           !uploaded && ( // Tampilkan tombol "Upload Image" hanya jika ada gambar yang dipilih
             <Pressable onPress={onUploadImage} style={styles.uploadButton}>
               <Text style={styles.uploadText}>Upload Image</Text>
+              <Loader
+                modalVisible={modalVisible2}
+                setModalVisible={setModalVisible2}
+              />
             </Pressable>
           )}
 
-        <View style={{flexDirection: 'row'}}>
-          <Pressable
-            onPress={() => navigation.navigate('SelectLogin')}
-            style={styles.signOutButton}>
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </Pressable>
-          <Pressable
-            style={styles.saldoButton}
-            onPress={() => setModalVisible(true)}>
-            {/* Ketika tombol "Top Up Saldo" ditekan, setModalVisible(true) untuk menampilkan modal */}
-            <Text style={styles.signOutText}>Top Up Saldo</Text>
-          </Pressable>
-        </View>
-
-        {/* Modal */}
+        {/* Modal top up */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -309,6 +363,222 @@ const Profile = () => {
             </View>
           </View>
         </Modal>
+
+        {/* Modal password */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisibleP}
+          onRequestClose={() => {
+            setModalVisibleP(!modalVisibleP);
+          }}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Masukkan Password anda</Text>
+              <TextInput
+                style={styles.input}
+                onChangeText={text => setPassword(text)}
+                // value={Password}
+                secureTextEntry
+              />
+              <Pressable
+                onPress={() => {
+                  if (Password === userData.password) {
+                    setModalVisibleU(true);
+                  } else {
+                    alert(' Password anda salah');
+                  }
+                }}
+                style={[styles.button, styles.buttonClose]}>
+                <Text style={styles.textStyle}>Confirm</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.button,
+                  styles.buttonClose,
+                  {position: 'absolute', top: 0, right: 0},
+                ]}
+                onPress={() => setModalVisibleP(!modalVisibleP)}>
+                <Image
+                  source={require('../../../images/close.png')}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                  }}
+                />
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+        {/* Modal ubah password */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisibleU}
+          onRequestClose={() => {
+            setModalVisibleU(!modalVisibleU);
+          }}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Masukkan Password baru anda</Text>
+              <TextInput
+                style={styles.input}
+                onChangeText={text => setNewPassword(text)}
+                // value={newPassword}
+                secureTextEntry
+              />
+              <Pressable
+                onPress={ubahPassword}
+                style={[styles.button, styles.buttonClose]}>
+                <Text style={styles.textStyle}> Ubah Password </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.button,
+                  styles.buttonClose,
+                  {position: 'absolute', top: 0, right: 0},
+                ]}
+                onPress={() => setModalVisibleU(!modalVisibleU)}>
+                <Image
+                  source={require('../../../images/close.png')}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                  }}
+                />
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+        {/* Modal informasi saldo */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisibleS}
+          onRequestClose={() => {
+            setModalVisibleS(!modalVisibleS);
+          }}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              {userData && (
+                <React.Fragment>
+                  <Text style={styles.modalText}>Saldo anda saat ini</Text>
+                  <Text style={styles.modalTextS}> Rp {userData.saldo}</Text>
+                </React.Fragment>
+              )}
+              <Pressable
+                style={[
+                  styles.button,
+                  styles.buttonClose,
+                  {position: 'absolute', top: 0, right: 0},
+                ]}
+                onPress={() => setModalVisibleS(!modalVisibleS)}>
+                <Image
+                  source={require('../../../images/close.png')}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                  }}
+                />
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      </View>
+      <View style={styles.content2}>
+        <View>
+          <Pressable
+            onPress={() => setModalVisibleP(true)}
+            style={[styles.itemContainer, {borderBottomWidth: 1}]}>
+            <Image
+              source={require('../../../images/pass.png')}
+              style={styles.icon}
+            />
+            <Text style={styles.itemText}>Ubah Password</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigation.navigate('Orders')}
+            style={[styles.itemContainer, {borderBottomWidth: 1}]}>
+            <Image
+              source={require('../../../images/check.png')}
+              style={styles.icon}
+            />
+            <Text style={styles.itemText}>Riwayat Belanja</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setModalVisibleS(true)}
+            style={[styles.itemContainer, {borderBottomWidth: 1}]}>
+            <Image
+              source={require('../../../images/saldo.png')}
+              style={styles.icon}
+            />
+            <Text style={styles.itemText}>Informasi Saldo</Text>
+          </Pressable>
+
+          {/* ... (kode yang lain) */}
+
+          {/* <Text style={styles.userInfo}>Saldo: {userData.saldo}</Text> */}
+
+          <Pressable
+            style={[
+              styles.itemContainer,
+              {borderBottomWidth: 1, marginLeft: 20},
+            ]}
+            onPress={() => setModalVisible(true)}>
+            {/* Ketika tombol "Top Up Saldo" ditekan, setModalVisible(true) untuk menampilkan modal */}
+            <Image
+              source={require('../../../images/topup.png')} // Jika belum ada gambar, gunakan plus.png
+              style={styles.icon}
+            />
+            <Text style={styles.itemText}>Top Up Saldo</Text>
+            <Loader
+              modalVisible={modalVisible2}
+              setModalVisible={setModalVisible2}
+            />
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.itemContainer,
+              {borderBottomWidth: 1, marginLeft: 20},
+            ]}
+            onPress={() => {
+              Alert.alert(
+                'Konfirmasi',
+                'Apakah Anda yakin ingin keluar?',
+                [
+                  {
+                    text: 'Batal',
+                    onPress: () => console.log('Canceled'),
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Ya',
+                    onPress: () => signOut(), // Panggil fungsi signOut dengan tanda kurung
+                    style: 'destructive',
+                  },
+                ],
+                {cancelable: true},
+              );
+            }}>
+            <Image
+              source={require('../../../images/logout.png')}
+              style={styles.icon}
+            />
+            <Text style={styles.itemText}>Sign Out</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -319,14 +589,51 @@ export default Profile;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff', // Ganti dengan warna latar belakang yang diinginkan
+    backgroundColor: '#DBDBDB', // Ganti dengan warna latar belakang yang diinginkan
   },
+
   content: {
     flex: 1,
+    width: '70%',
+    marginBottom: 20,
+    borderRadius: 20,
+    marginTop: 10,
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'center',
     position: 'relative',
   },
+  content2: {
+    flex: 2,
+    width: '90%',
+    borderRadius: 20,
+    marginTop: 10,
+    backgroundColor: '#fff',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    alignSelf: 'center',
+    position: 'relative',
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    marginLeft: 15,
+    marginVertical: 3,
+    borderBottomColor: 'grey', // Warna garis bawah
+  },
+  icon: {
+    width: 40,
+    height: 40,
+    marginRight: 20,
+  },
+  itemText: {
+    fontSize: 18,
+    width: '80%',
+    fontWeight: '700',
+  },
+
   profileImageContainer: {
     marginVertical: 10,
   },
@@ -334,25 +641,24 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: 'green',
     borderRadius: 10,
-    marginTop: 20,
   },
   uploadText: {
     color: 'white',
     textAlign: 'center',
   },
   profileImage: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
     borderRadius: 80,
+    marginTop: -10,
   },
   welcomeText: {
+    marginTop: -5,
     fontSize: 18,
     fontWeight: 'bold',
-    marginVertical: 10,
   },
   userInfo: {
     fontSize: 16,
-    marginVertical: 5,
   },
   signOutButton: {
     padding: 7,
@@ -409,6 +715,15 @@ const styles = StyleSheet.create({
   modalText: {
     marginBottom: 15,
     textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalTextS: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 18,
+    color: 'green',
+    fontWeight: '700',
   },
   input: {
     borderWidth: 1,

@@ -14,12 +14,14 @@ import Header from '../../common/Header';
 import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useIsFocused, useNavigation} from '@react-navigation/native';
+import Loader from '../../common/Loader';
 let userId = '';
 const Main = () => {
   const [items, setItems] = useState([]);
   const [cartCount, setCartCount] = useState(0);
   const navigation = useNavigation();
   const isFocused = useIsFocused();
+  const [modalVisible, setModalVisible] = useState(false);
   const [columns, setColumns] = useState(2); // State untuk jumlah kolom
   const [filteredItems, setFilteredItems] = useState([]); // Menyimpan data produk yang difilter
   const [searchText, setSearchText] = useState(''); // State untuk teks yang diinputkan pada pencarian
@@ -81,9 +83,18 @@ const Main = () => {
   const getCartItems = async () => {
     userId = await AsyncStorage.getItem('USERID');
     const user = await firestore().collection('users').doc(userId).get();
-    setCartCount(user._data.cart.length);
+
+    // Menghitung cartCount dari total jumlah item dan qty masing-masing produk dalam cart
+    let totalItems = 0;
+    const cartData = user.data().cart || [];
+    cartData.forEach(item => {
+      totalItems += item.data.qty || 0;
+    });
+
+    setCartCount(totalItems);
   };
   const onAddToCart = async (item, index) => {
+    setModalVisible(true);
     const user = await firestore().collection('users').doc(userId).get();
     console.log(user.data().cart);
 
@@ -93,14 +104,14 @@ const Main = () => {
     if (existingItem) {
       // Jika item sudah ada di cart, tambahkan jumlahnya
       if (item.data.stock > 0) {
-        existingItem.data.qty = (existingItem.data.qty || 0) + 1;
-        // Kurangi stok produk
         item.data.stock -= 1;
 
         // Update stok produk di Firestore
         await firestore().collection('items').doc(item.id).update({
           stock: item.data.stock,
         });
+        existingItem.data.qty = (existingItem.data.qty || 0) + 1;
+        // Kurangi stok produk
       } else {
         alert('Stock produk habis!');
         return;
@@ -108,17 +119,17 @@ const Main = () => {
     } else {
       if (item.data.stock > 0) {
         // Jika item belum ada di cart, tambahkan ke cart dengan qty 1
-        tempCart.push({
-          id: item.id,
-          data: {...item.data, qty: 1}, // Inisialisasi qty menjadi 1
-        });
-        // Kurangi stok produk
         item.data.stock -= 1;
 
         // Update stok produk di Firestore
         await firestore().collection('items').doc(item.id).update({
           stock: item.data.stock,
         });
+        tempCart.push({
+          id: item.id,
+          data: {...item.data, qty: 1}, // Inisialisasi qty menjadi 1
+        });
+        // Kurangi stok produk
       } else {
         alert('Stock produk habis!');
         return;
@@ -129,7 +140,7 @@ const Main = () => {
     await firestore().collection('users').doc(userId).update({
       cart: tempCart,
     });
-
+    setModalVisible(false);
     getCartItems(); // Refresh jumlah item di keranjang
   };
 
@@ -228,6 +239,10 @@ const Main = () => {
                   }}>
                   <Text style={{color: '#fff'}}>Add To cart</Text>
                 </TouchableOpacity>
+                <Loader
+                  modalVisible={modalVisible}
+                  setModalVisible={setModalVisible}
+                />
               </View>
             </TouchableOpacity>
           );

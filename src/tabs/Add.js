@@ -73,35 +73,45 @@ const Add = () => {
         .getDownloadURL();
       console.log(url);
       uploadItem(url);
-      navigation.navigate('Items');
     } catch (error) {
       console.error('Error uploading image: ', error);
     }
   };
 
-  const uploadItem = url => {
+  const uploadItem = async url => {
     setModalVisible(true);
-    firestore()
-      .collection('items')
-      .add({
+
+    try {
+      const itemRef = firestore().collection('items');
+      const existingItem = await itemRef.where('name', '==', name).get();
+
+      if (!existingItem.empty) {
+        setModalVisible(false);
+        alert(
+          'Produk yang Anda tambahkan sudah ada. Tambahkan produk lainnya.',
+        );
+        return;
+      }
+
+      await itemRef.add({
         name: name,
         price: price,
         discountPrice: discountPrice,
         description: description,
         rating: rating,
         stock: stock,
-        imageUrl: url + '',
-      })
-      .then(() => {
-        console.log('Barang berhasil ditambahkan !');
-        alert('Barang berhasil ditambahkan !');
-        setModalVisible(false);
-      })
-      .catch(error => {
-        console.error('Error adding item: ', error);
+        imageUrl: url || '',
       });
-  };
 
+      console.log('Barang berhasil ditambahkan !');
+      alert('Barang berhasil ditambahkan !');
+      navigation.navigate('Items');
+      setModalVisible(false);
+    } catch (error) {
+      console.error('Error adding item: ', error);
+      setModalVisible(false);
+    }
+  };
   return (
     <ScrollView style={styles.container}>
       <View style={styles.container}>

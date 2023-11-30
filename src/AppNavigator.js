@@ -20,6 +20,8 @@ import OrderStatus from './screens/user/checkout/OrderStatus';
 import Detail from './screens/user/Detail';
 import Items from './tabs/Items';
 import Profile from './screens/user/home_tabs/Profile';
+import Orders from './screens/user/home_tabs/Orders';
+import Delivery from './screens/user/checkout/Delivery';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -106,17 +108,27 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Detail"
           component={Detail}
-          options={{headerShown: true}}
+          options={{headerShown: false}}
         />
         <Stack.Screen
           name="Items"
           component={Items}
-          options={{headerShown: true}}
+          options={{headerShown: false}}
         />
         <Stack.Screen
           name="Profile"
           component={Profile}
-          options={{headerShown: true}}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Orders"
+          component={Orders}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Delivery"
+          component={Delivery}
+          options={{headerShown: false}}
         />
       </Stack.Navigator>
     </NavigationContainer>

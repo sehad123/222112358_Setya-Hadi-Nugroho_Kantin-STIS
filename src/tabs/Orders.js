@@ -46,31 +46,32 @@ const Orders = () => {
 
     return (
       <View style={styles.orderItem}>
-        <Text style={styles.orderBy}>{`Ordered By: ${item.orderBy1}`}</Text>
+        <Text style={styles.orderBy}>
+          {` ${item.data.orderBy}   ||    `}
+          {item.data.tanggal ? item.data.tanggal : 'Not available'}
+        </Text>
+
         <FlatList
           data={item.data.items}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({item}) => (
+          keyExtractor={(subItem, index) => index.toString()}
+          renderItem={({item: subItem}) => (
             <View style={styles.itemView}>
               <Image
-                source={{uri: item.data.imageUrl}}
+                source={{uri: subItem.data.imageUrl}}
                 style={styles.itemImage}
               />
               <View>
-                <Text style={styles.nameText}>{item.data.name}</Text>
+                <Text style={styles.nameText}>{subItem.data.name}</Text>
                 <Text style={styles.nameText}>
-                  {'Price: ' +
-                    item.data.discountPrice +
-                    ', Qty: ' +
-                    item.data.qty}
+                  {`Price: ${subItem.data.discountPrice}, Qty: ${subItem.data.qty}`}
                 </Text>
               </View>
             </View>
           )}
         />
-        <Text style={styles.orderTotal}>{`Omset : Rp ${calculateOrderTotal(
-          item.data.items,
-        )}`}</Text>
+        <Text style={styles.orderTotal}>
+          {`Total : Rp ${calculateOrderTotal(item.data.items)}`}
+        </Text>
       </View>
     );
   };
@@ -84,6 +85,16 @@ const Orders = () => {
       (total, item) => total + item.data.discountPrice * item.data.qty,
       0,
     );
+  };
+  const calculateTotalOmset = () => {
+    let totalOmset = 0;
+    orders.forEach(order => {
+      const orderItems = order.data.items;
+      if (orderItems && Array.isArray(orderItems) && orderItems.length > 0) {
+        totalOmset += calculateOrderTotal(orderItems);
+      }
+    });
+    return totalOmset;
   };
 
   return (
@@ -105,12 +116,16 @@ const Orders = () => {
         keyExtractor={(item, index) => item.orderId}
         renderItem={renderOrderItem}
       />
+      <Text style={styles.orderTotal}>
+        {`Total Omset: Rp ${calculateTotalOmset()}`}
+      </Text>
     </View>
   );
 };
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginBottom: 50,
   },
   header: {
     height: 60,
@@ -134,7 +149,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     alignSelf: 'center',
     backgroundColor: '#fff',
-    marginBottom: 10,
+    marginBottom: 20,
   },
   itemImage: {
     width: 50,
@@ -154,7 +169,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   orderBy: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
     marginVertical: 8,
     marginLeft: 20,
@@ -163,6 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginVertical: 8,
+    color: 'green',
     marginLeft: 20,
   },
 });

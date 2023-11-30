@@ -94,6 +94,7 @@ const EditItem = ({navigation}) => {
         console.log('User added!');
         navigation.goBack();
         setModalVisible(false);
+        alert('produk berhasil di perbarui');
       });
   };
 
@@ -101,7 +102,7 @@ const EditItem = ({navigation}) => {
     <ScrollView style={styles.container}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Tambah Produk</Text>
+          <Text style={styles.headerText}>Edit Produk</Text>
           <TouchableOpacity
             onPress={() => {
               navigation.navigate('SelectLogin');

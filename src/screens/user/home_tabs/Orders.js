@@ -29,12 +29,15 @@ const Orders = () => {
 
   return (
     <View style={styles.container}>
-      <Header title={'Daftar Pesanan Anda'} />
+      <Header title={'Riwayat Pesanan Anda'} />
       <FlatList
         data={orderList}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({item}) => (
           <View style={styles.orderItem}>
+            <Text style={styles.totalText}>
+              {'Tanggal pemesanan : ' + item.tanggal}
+            </Text>
             {item.items.map((subItem, subIndex) => (
               <View key={subIndex} style={styles.itemView}>
                 <Image
@@ -52,6 +55,9 @@ const Orders = () => {
                 </View>
               </View>
             ))}
+            <Text style={styles.totalText}>
+              {'Total Pesanan: ' + item.orderTotal}
+            </Text>
           </View>
         )}
       />
@@ -62,6 +68,12 @@ const Orders = () => {
 export default Orders;
 
 const styles = StyleSheet.create({
+  totalText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginLeft: 10,
+  },
   container: {
     flex: 1,
     marginBottom: 50,
@@ -84,6 +96,7 @@ const styles = StyleSheet.create({
     margin: 10,
     width: '100%',
     flexDirection: 'row',
+    borderBottomWidth: 1,
   },
   nameText: {
     fontSize: 16,
