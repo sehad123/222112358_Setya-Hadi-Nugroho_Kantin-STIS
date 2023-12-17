@@ -4,14 +4,23 @@ import React, {useState} from 'react';
 import LanguageModal from '../common/LanguageModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {translation} from '../../Utils';
-
+import {useNavigation} from '@react-navigation/native';
 const SelectLogin = ({navigation}) => {
   const [langModalVisible, setLangModalVisible] = useState(false);
   const [selectedLang, setSelectedLang] = useState(0);
-
+  const nav = useNavigation();
   const saveSelectedLang = async index => {
     await AsyncStorage.setItem('LANG', index + '');
   };
+
+  const handleAdminLogin = () => {
+    nav.navigate('Login');
+  };
+
+  const handleUserLogin = () => {
+    nav.navigate('UserLogin');
+  };
+
   return (
     <View style={styles.container}>
       <Image
@@ -31,18 +40,10 @@ const SelectLogin = ({navigation}) => {
           ? translation[0].arab
           : null}
       </Text>
-      <TouchableOpacity
-        style={styles.btn}
-        onPress={() => {
-          navigation.navigate('Login');
-        }}>
+      <TouchableOpacity style={styles.btn} onPress={handleAdminLogin}>
         <Text style={styles.btnText}>Admin Login</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.btn}
-        onPress={() => {
-          navigation.navigate('UserLogin');
-        }}>
+      <TouchableOpacity style={styles.btn} onPress={handleUserLogin}>
         <Text style={styles.btnText}>User Login</Text>
       </TouchableOpacity>
       <TouchableOpacity

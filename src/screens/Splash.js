@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, Image} from 'react-native';
 import React, {useEffect} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -15,11 +15,17 @@ const Splash = ({navigation}) => {
     if (email !== null) {
       navigation.navigate('Home');
     } else {
-      navigation.navigate('SelectLogin');
+      navigation.navigate('Biometric');
     }
   };
   return (
     <View style={styles.container}>
+      <View>
+        <Image
+          style={{height: 90, width: 90, marginBottom: 10}}
+          source={require('../images/stis.png')}
+        />
+      </View>
       <Text style={styles.logo}>Kantin STIS</Text>
     </View>
   );

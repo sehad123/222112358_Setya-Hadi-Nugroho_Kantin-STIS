@@ -22,6 +22,7 @@ import Items from './tabs/Items';
 import Profile from './screens/user/home_tabs/Profile';
 import Orders from './screens/user/home_tabs/Orders';
 import Delivery from './screens/user/checkout/Delivery';
+import Biometric from './screens/Biometric';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -128,6 +129,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Delivery"
           component={Delivery}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Biometric"
+          component={Biometric}
           options={{headerShown: false}}
         />
       </Stack.Navigator>
